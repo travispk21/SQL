@@ -1,6 +1,6 @@
 -- In this SQL, I'm querying a dataset called "chinook", which represents a digital media store. I'll be quantifying and aggregating information about artists, albums, media tracks, invoices, customers, and employees.
 
--- Provide a query that shows the invoices associated with each sales agent. The resulting table should include the Sales Agent's full name.
+-- 1. Provide a query that shows the invoices associated with each sales agent. The resulting table should include the Sales Agent's full name.
 SELECT emp.LastName
 , emp.FirstName
 , inv.*
@@ -11,4 +11,94 @@ LEFT JOIN chinook.employees emp
 ON emp.EmployeeID = cust.SupportRepID
 WHERE emp.Title = 'Sales Support Agent'
 ORDER BY emp.LastName
+;
+
+-- 2. Provide a query that shows all the Tracks, and include the Album name, Media type, and Genre.
+SELECT t.Name track
+, al.Title album_name
+, m.Name media_type
+, g.Name genre
+FROM chinook.tracks t
+JOIN chinook.albums al
+ON t.AlbumID = al.AlbumID
+JOIN chinook.media_types m
+ON t.MediaTypeID = m.MediaTypeID
+JOIN chinook.genres g
+ON t.GenreID = g.GenreID
+;
+
+-- 3. Which sales agent made the most dollars in sales in 2009?
+SELECT e.LastName
+, e.FirstName
+, ROUND(SUM(i.Total), 2) as "Total Sales"
+FROM chinook.invoices i
+LEFT JOIN chinook.customers c
+ON c.CustomerID = i.CustomerID
+LEFT JOIN chinook.employees e
+ON e.EmployeeID = c.SupportRepID
+WHERE i.InvoiceDate LIKE '2009%'
+GROUP BY e.EmployeeID
+ORDER BY "Total Sales" desc
+LIMIT 1
+;
+
+-- 4. Which artists have received over $300 in total sales?
+SELECT ar.Name
+, ROUND(SUM(i.Total), 2) AS "Total Sales"
+FROM chinook.invoices as i
+JOIN chinook.invoice_items
+ON i.InvoiceID = invoice_items.InvoiceID
+JOIN chinook.tracks
+ON invoice_items.TrackID = tracks.TrackID
+JOIN chinook.albums
+ON tracks.AlbumID = albums.AlbumID
+JOIN chinook.artists as ar
+ON albums.ArtistID = ar.ArtistID
+GROUP BY ar.Name
+HAVING "Total Sales" > 300
+;
+
+-- 5. List the album and average total sales for each Iron Maiden track in that album.
+WITH trackSales AS(
+	SELECT al.Title as album
+	, t.Name as track
+	, ROUND(SUM(i.Total), 2) AS "Total Sales"
+	FROM invoices as i
+	JOIN invoice_items
+	ON i.InvoiceID = invoice_items.InvoiceID
+	JOIN tracks as t
+	ON invoice_items.TrackID = t.TrackID
+	JOIN albums as al
+	ON t.AlbumID = al.AlbumID
+	JOIN artists as ar
+	ON al.ArtistID = ar.ArtistID
+	WHERE ar.Name = 'Iron Maiden'
+	GROUP BY t.Name, al.title
+)
+SELECT album
+, ROUND(AVG("Total Sales"), 2) as "Average Sales per Track"
+FROM trackSales
+GROUP BY album
+;
+
+-- 6. Who are the top 5 selling artists in the 90's Music playlist?
+SELECT ar.Name as Artist
+, ROUND(SUM(i.Total), 2) as "Total Sales"
+FROM chinook.invoices as i
+JOIN chinook.invoice_items
+ON i.invoiceid = invoice_items.invoiceid
+JOIN chinook.tracks
+ON invoice_items.trackid = tracks.trackid
+JOIN chinook.albums
+ON tracks.albumid = albums.AlbumId
+JOIN chinook.artists as ar
+ON albums.artistid = ar.artistid
+JOIN chinook.playlist_track
+ON tracks.trackid = playlist_track.trackid
+JOIN chinook.playlists as pl
+ON playlist_track.playlistid = pl.PlaylistId
+WHERE pl.Name = '90’s Music'
+GROUP BY ar.Name
+ORDER BY "Total Sales" desc
+LIMIT 5
 ;
