@@ -1,0 +1,14 @@
+-- In this SQL, I'm querying a dataset called "chinook", which represents a digital media store. I'll be quantifying and aggregating information about artists, albums, media tracks, invoices, customers, and employees.
+
+-- Provide a query that shows the invoices associated with each sales agent. The resulting table should include the Sales Agent's full name.
+SELECT emp.LastName
+, emp.FirstName
+, inv.*
+FROM chinook.invoices inv
+LEFT JOIN chinook.customers cust
+ON cust.CustomerID = inv.CustomerID
+LEFT JOIN chinook.employees emp
+ON emp.EmployeeID = cust.SupportRepID
+WHERE emp.Title = 'Sales Support Agent'
+ORDER BY emp.LastName
+;
